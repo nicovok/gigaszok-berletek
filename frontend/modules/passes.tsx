@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import QRCode from "qrcode";
+import { useState } from "react";
+import { renderSVG } from "uqr";
 import {
   SimpleGrid, Box, Text, Group, Button, Modal, Stack,
   TextInput, Textarea, NumberInput, Checkbox,
@@ -11,12 +11,13 @@ import { PassTicket } from "../components/pass-ticket";
 import { usePasses } from "../hooks/use-passes";
 import { usePassDetail } from "../hooks/use-pass-detail";
 
-function QrCanvas({ url }: { url: string }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    if (ref.current) QRCode.toCanvas(ref.current, url, { width: 140, margin: 1 });
-  }, [url]);
-  return <canvas ref={ref} style={{ borderRadius: 6, display: "block" }} />;
+function QrCode({ url }: { url: string }) {
+  return (
+    <div
+      style={{ width: 140, height: 140, borderRadius: 6, overflow: "hidden" }}
+      dangerouslySetInnerHTML={{ __html: renderSVG(url, { pixelSize: 4 }) }}
+    />
+  );
 }
 
 const emptyForm = {
@@ -216,7 +217,7 @@ export default function Passes({ token }: { token: string }) {
               <Divider my={2} />
 
               <Group gap="md" align="flex-start">
-                <QrCanvas url={`${window.location.origin}/pass/${detailPass.view_token}`} />
+                <QrCode url={`${window.location.origin}/pass/${detailPass.view_token}`} />
                 <Stack gap={4} justify="center">
                   <Text size="xs" c="dimmed" lh={1.4}>Szülő ezt beolvasva<br />látja a bérlet állapotát.</Text>
                   <Button
