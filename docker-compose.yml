@@ -11,7 +11,6 @@ services:
       - db:/app/data
     networks:
       - berletek
-      - coolify
 
 volumes:
   db:
@@ -19,5 +18,3 @@ volumes:
 networks:
   berletek:
     driver: bridge
-  coolify:
-    external: true
