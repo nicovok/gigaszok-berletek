@@ -5,7 +5,6 @@ import { sendPassCreatedEmail } from "../email";
 import type { Trainer } from "../schema";
 
 type ExternalPassInput = {
-  trainer_email: string;
   child_name: string;
   child_birth_date: string;
   child_notes?: string;
@@ -29,9 +28,9 @@ export const externalRoutes = {
 
       const body = await req.json() as ExternalPassInput;
 
-      const trainer = db.prepare(`SELECT * FROM trainers WHERE email = ?`).get(body.trainer_email) as Trainer | undefined;
+      const trainer = db.prepare(`SELECT * FROM trainers LIMIT 1`).get() as Trainer | undefined;
       if (!trainer) {
-        return Response.json({ error: `No trainer found with email: ${body.trainer_email}` }, { status: 404 });
+        return Response.json({ error: "No trainer found" }, { status: 404 });
       }
 
       const id = randomUUID();
