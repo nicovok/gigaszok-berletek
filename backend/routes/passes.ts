@@ -17,14 +17,12 @@ type PassInput = Omit<Pass, "id" | "trainer_id" | "created_at">;
 export const passRoutes = {
   "/api/passes": {
     async GET(req: Request) {
-      const auth = await requireAuth(req);
-      
-      const passes = db.prepare(`SELECT * FROM passes WHERE trainer_id = ? ORDER BY child_name ASC`).all(auth.sub);
+      await requireAuth(req);
+      const passes = db.prepare(`SELECT * FROM passes ORDER BY child_name ASC`).all();
       return Response.json(passes);
     },
     async POST(req: Request) {
       const auth = await requireAuth(req);
-      
       const body = await req.json() as PassInput;
       const id = randomUUID();
       const viewToken = randomUUID();
@@ -50,34 +48,31 @@ export const passRoutes = {
 
   "/api/passes/:id": {
     async PUT(req: Request) {
-      const auth = await requireAuth(req);
-      
+      await requireAuth(req);
       const id = (req as BunRequest<{ id: string }>).params.id;
       const body = await req.json() as PassInput;
       db.prepare(`
         UPDATE passes SET child_name = ?, child_birth_date = ?, child_notes = ?, parent_name = ?, parent_email = ?, parent_phone = ?, remaining_sessions = ?
-        WHERE id = ? AND trainer_id = ?
-      `).run(body.child_name, body.child_birth_date, body.child_notes ?? null, body.parent_name, body.parent_email, body.parent_phone, body.remaining_sessions, id, auth.sub);
+        WHERE id = ?
+      `).run(body.child_name, body.child_birth_date, body.child_notes ?? null, body.parent_name, body.parent_email, body.parent_phone, body.remaining_sessions, id);
       return Response.json({ success: true });
     },
     async DELETE(req: Request) {
-      const auth = await requireAuth(req);
-      
+      await requireAuth(req);
       const id = (req as BunRequest<{ id: string }>).params.id;
-      db.prepare(`DELETE FROM passes WHERE id = ? AND trainer_id = ?`).run(id, auth.sub);
+      db.prepare(`DELETE FROM passes WHERE id = ?`).run(id);
       return Response.json({ success: true });
     },
   },
 
   "/api/passes/:id/usage": {
     async GET(req: Request) {
-      const auth = await requireAuth(req);
-      
+      await requireAuth(req);
       const id = (req as BunRequest<{ id: string }>).params.id;
-      const pass = db.prepare(`SELECT remaining_sessions, created_at FROM passes WHERE id = ? AND trainer_id = ?`)
-        .get(id, auth.sub) as { remaining_sessions: number; created_at: number } | undefined;
+      const pass = db.prepare(`SELECT remaining_sessions, created_at FROM passes WHERE id = ?`)
+        .get(id) as { remaining_sessions: number; created_at: number } | undefined;
       if (!pass) return Response.json([]);
-      return Response.json(buildPassLedger(id, pass.created_at, pass.remaining_sessions, auth.sub));
+      return Response.json(buildPassLedger(id, pass.created_at, pass.remaining_sessions));
     },
   },
 
@@ -97,7 +92,7 @@ export const passRoutes = {
       const { sessions, note } = await req.json() as DeductInput;
       if (!sessions || sessions < 1) return Response.json({ error: "Invalid sessions" }, { status: 400 });
       const now = Date.now();
-      db.prepare(`UPDATE passes SET remaining_sessions = MAX(0, remaining_sessions - ?) WHERE id = ? AND trainer_id = ?`).run(sessions, id, auth.sub);
+      db.prepare(`UPDATE passes SET remaining_sessions = MAX(0, remaining_sessions - ?) WHERE id = ?`).run(sessions, id);
       db.prepare(`INSERT INTO pass_manual_deductions (id, pass_id, trainer_id, sessions, note, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
         .run(randomUUID(), id, auth.sub, sessions, note ?? null, now);
       return Response.json({ success: true });
@@ -107,14 +102,13 @@ export const passRoutes = {
   "/api/passes/:id/topup": {
     async POST(req: Request) {
       const auth = await requireAuth(req);
-      
       const id = (req as BunRequest<{ id: string }>).params.id;
       const { sessions } = await req.json() as { sessions: number };
       const now = Date.now();
-      db.prepare(`UPDATE passes SET remaining_sessions = remaining_sessions + ? WHERE id = ? AND trainer_id = ?`).run(sessions, id, auth.sub);
+      db.prepare(`UPDATE passes SET remaining_sessions = remaining_sessions + ? WHERE id = ?`).run(sessions, id);
       db.prepare(`INSERT INTO pass_topups (id, pass_id, trainer_id, sessions, created_at) VALUES (?, ?, ?, ?, ?)`)
         .run(randomUUID(), id, auth.sub, sessions, now);
-      const pass = db.prepare(`SELECT * FROM passes WHERE id = ? AND trainer_id = ?`).get(id, auth.sub) as Pass | undefined;
+      const pass = db.prepare(`SELECT * FROM passes WHERE id = ?`).get(id) as Pass | undefined;
       if (pass) {
         sendPassToppedUpEmail({
           to: pass.parent_email,
