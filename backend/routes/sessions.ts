@@ -57,10 +57,9 @@ export const sessionRoutes = {
         FROM session_attendance sa
         JOIN sessions s ON sa.session_id = s.id
         JOIN passes   p ON sa.pass_id    = p.id
-        WHERE s.trainer_id = ?
         ORDER BY sa.deducted_at DESC
         LIMIT 200
-      `).all(auth.sub);
+      `).all();
 
       return Response.json(rows);
     },
