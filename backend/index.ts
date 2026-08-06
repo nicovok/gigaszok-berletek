@@ -5,6 +5,7 @@ import { AuthError } from "./middleware";
 import { authRoutes } from "./routes/auth";
 import { passRoutes } from "./routes/passes";
 import { sessionRoutes } from "./routes/sessions";
+import { externalRoutes } from "./routes/external";
 import frontend from "../frontend/index.html";
 
 initDb();
@@ -18,6 +19,7 @@ const server = Bun.serve({
     ...authRoutes,
     ...passRoutes,
     ...sessionRoutes,
+    ...externalRoutes,
   },
   error(err) {
     if (err instanceof AuthError) {

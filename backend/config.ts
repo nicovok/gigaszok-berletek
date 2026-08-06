@@ -7,6 +7,7 @@ function require(key: string): string {
 export const config = {
   port: parseInt(Bun.env.PORT ?? "3000"),
   baseUrl: Bun.env.BASE_URL ?? "http://localhost:3000",
+  externalApiKey: Bun.env.EXTERNAL_API_KEY,
   jwtSecret: require("JWT_SECRET"),
   pocketId: {
     baseUrl: "https://auth.nicoprt.xyz",
