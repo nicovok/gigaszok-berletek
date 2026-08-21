@@ -2,7 +2,7 @@
 
 Pass management system built for Gigászok Sportegyesület swimming instructors.
 
-![Pass list](docs/screenshot-lista.png) The instructor manages student passes from a dashboard — creating them, recording sessions (which deduct one credit from each attendee), and topping up balances. Parents receive automatic email notifications and can view their child's pass status via a shareable QR-code link, no login required. Passes can also be created externally via an API key (e.g. triggered by an n8n workflow after a webshop order).
+![Pass list](docs/screenshot-lista.png) The instructor manages student passes from a dashboard - creating them, recording sessions (which deduct one credit from each attendee), and topping up balances. Parents receive automatic email notifications and can view their child's pass status via a shareable QR-code link, no login required. Passes can also be created externally via an API key (e.g. triggered by an n8n workflow after a webshop order).
 
 ## Flow
 
@@ -29,20 +29,20 @@ Instructor dashboard
 
 ## Features
 
-- **Pass management** — child and parent details, remaining session balance
-- **Session recording** — deduct one credit from each selected pass in one click; atomic transaction
-- **Top-up / manual deduction** — balance adjustments with a full audit ledger
-- **Usage ledger** — every transaction is logged and timestamped
-- **QR code / parent link** — parents view their child's pass status without logging in
-- **Email notifications** — automatic on pass creation, top-up, and session deduction
-- **External API** — passes created automatically when a parent pays in the enrollment system (OpnForm → n8n → gigaszok-enrollment → outgoing webhook → this API)
-- **PocketID auth** — OAuth2 login via [PocketID](https://github.com/stonith404/pocket-id)
+- **Pass management** - child and parent details, remaining session balance
+- **Session recording** - deduct one credit from each selected pass in one click; atomic transaction
+- **Top-up / manual deduction** - balance adjustments with a full audit ledger
+- **Usage ledger** - every transaction is logged and timestamped
+- **QR code / parent link** - parents view their child's pass status without logging in
+- **Email notifications** - automatic on pass creation, top-up, and session deduction
+- **External API** - passes created automatically when a parent pays in the enrollment system (OpnForm → n8n → gigaszok-enrollment → outgoing webhook → this API)
+- **PocketID auth** - OAuth2 login via [PocketID](https://github.com/stonith404/pocket-id)
 
 ## Tech stack
 
 | Layer | Technology | Why |
 |-------|------------|-----|
-| Runtime | [Bun](https://bun.sh) | Built-in HTTP server, SQLite driver, TypeScript bundler — no Express, no Webpack |
+| Runtime | [Bun](https://bun.sh) | Built-in HTTP server, SQLite driver, TypeScript bundler - no Express, no Webpack |
 | Database | `bun:sqlite` (raw SQL) | Zero dependencies, single file, sufficient for this scale |
 | Frontend | React 19 + [Mantine 7](https://mantine.dev) | Modals, notifications, and form primitives out of the box |
 | Email | Nodemailer + SMTP | HTML email with inline CID attachments (logo / footer) |
@@ -57,17 +57,17 @@ backend/
   db.ts             # SQLite init, schema, indexes
   schema.ts         # Shared TypeScript types (imported by frontend)
   config.ts         # Typed .env reader
-  middleware.ts     # requireAuth() — throws AuthError on failure
+  middleware.ts     # requireAuth() - throws AuthError on failure
   auth.ts           # PocketID OAuth2 flow + JWT sign/verify
   email.ts          # HTML email templates + Nodemailer transport
-  pass-ops.ts       # createPass() + passUrl() — shared by internal and external routes
+  pass-ops.ts       # createPass() + passUrl() - shared by internal and external routes
   queries/
-    ledger.ts       # buildPassLedger() — reconstructs balance history from events
+    ledger.ts       # buildPassLedger() - reconstructs balance history from events
   routes/
     auth.ts         # /api/auth/*
-    passes.ts       # /api/passes/* — CRUD, top-up, deduct, usage ledger
-    sessions.ts     # /api/sessions — record session; /api/usage-log
-    external.ts     # /api/external/passes — API key protected
+    passes.ts       # /api/passes/* - CRUD, top-up, deduct, usage ledger
+    sessions.ts     # /api/sessions - record session; /api/usage-log
+    external.ts     # /api/external/passes - API key protected
 
 frontend/
   index.tsx         # React root
@@ -77,7 +77,7 @@ frontend/
     passes.tsx            # Pass list with search
     pass-detail-modal.tsx # Balance, top-up, session recording, QR code, ledger
     alkalom-modal.tsx     # Bulk session recording (select multiple passes)
-    public-pass.tsx       # Parent view — no auth required
+    public-pass.tsx       # Parent view - no auth required
   components/
     pass-ticket.tsx       # Ticket-style card UI
     ledger-row.tsx        # Shared ledger entry row (admin + parent views)
@@ -130,7 +130,7 @@ bun run dev            # hot reload on :3000
 | `SMTP_PASS` | SMTP password |
 | `EMAIL_FROM` | Sender address (defaults to `SMTP_USR`) |
 | `DB_PATH` | SQLite file path (default: `berletek.db`) |
-| `EXTERNAL_API_KEY` | Shared secret with gigaszok-enrollment — enables `POST /api/external/passes` |
+| `EXTERNAL_API_KEY` | Shared secret with gigaszok-enrollment - enables `POST /api/external/passes` |
 
 ### Email assets
 
@@ -191,12 +191,12 @@ Pre-built binaries for Linux x64/arm64, macOS x64/arm64, and Windows x64 are att
 | GET | `/api/passes/:id/usage` | Full ledger for a pass |
 | POST | `/api/passes/:id/topup` | Add sessions `{ sessions }` |
 | POST | `/api/passes/:id/deduct` | Manual deduction `{ sessions, note? }` |
-| GET | `/api/pass-view/:token` | Parent view — no auth |
+| GET | `/api/pass-view/:token` | Parent view - no auth |
 
 ### Sessions _(JWT required)_
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/sessions` | Record session `{ name, pass_ids[] }` — deducts 1 from each |
+| POST | `/api/sessions` | Record session `{ name, pass_ids[] }` - deducts 1 from each |
 | GET | `/api/usage-log` | Last 200 session attendance records |
 
 ### External API _(API key: `X-API-Key` header)_
