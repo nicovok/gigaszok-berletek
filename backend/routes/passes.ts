@@ -2,17 +2,11 @@ import { requireAuth } from "../middleware";
 import { db } from "../db";
 import type { BunRequest, Pass } from "../schema";
 import { buildPassLedger } from "../queries/ledger";
+import { sendPassToppedUpEmail } from "../email";
+import { createPass, passUrl, type PassInput } from "../pass-ops";
 import { randomUUID } from "crypto";
-import { config } from "../config";
-import { sendPassCreatedEmail, sendPassToppedUpEmail } from "../email";
 
 type DeductInput = { sessions: number; note?: string };
-
-function passUrl(viewToken: string) {
-  return `${config.baseUrl}/pass/${viewToken}`;
-}
-
-type PassInput = Omit<Pass, "id" | "trainer_id" | "created_at">;
 
 export const passRoutes = {
   "/api/passes": {
@@ -24,25 +18,8 @@ export const passRoutes = {
     async POST(req: Request) {
       const auth = await requireAuth(req);
       const body = await req.json() as PassInput;
-      const id = randomUUID();
-      const viewToken = randomUUID();
-      const now = Date.now();
-      db.prepare(`
-        INSERT INTO passes (id, trainer_id, view_token, child_name, child_birth_date, child_notes, parent_name, parent_email, parent_phone, remaining_sessions, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(id, auth.sub, viewToken, body.child_name, body.child_birth_date, body.child_notes ?? null, body.parent_name, body.parent_email, body.parent_phone, body.remaining_sessions, now);
-      if (body.remaining_sessions > 0) {
-        db.prepare(`INSERT INTO pass_topups (id, pass_id, trainer_id, sessions, created_at) VALUES (?, ?, ?, ?, ?)`)
-          .run(randomUUID(), id, auth.sub, body.remaining_sessions, now);
-      }
-      sendPassCreatedEmail({
-        to: body.parent_email,
-        parentName: body.parent_name,
-        childName: body.child_name,
-        sessions: body.remaining_sessions,
-        passUrl: passUrl(viewToken),
-      }).catch(err => console.error("[email] sendPassCreatedEmail failed:", err));
-      return Response.json({ id, ...body, trainer_id: auth.sub }, { status: 201 });
+      const { id, viewToken } = createPass(body, auth.sub);
+      return Response.json({ id, view_token: viewToken, ...body, trainer_id: auth.sub }, { status: 201 });
     },
   },
 

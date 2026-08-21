@@ -1,39 +1,54 @@
 import { requireAuth } from "../middleware";
 import { db } from "../db";
-import type { Pass, SessionAttendance } from "../schema";
+import type { Pass } from "../schema";
 import { randomUUID } from "crypto";
-import { config } from "../config";
 import { sendSessionDeductedEmail } from "../email";
+import { passUrl } from "../pass-ops";
+
+const insertSession = db.prepare(
+  `INSERT INTO sessions (id, trainer_id, name, scheduled_at, status, created_at) VALUES (?, ?, ?, ?, 'completed', ?)`
+);
+const insertAttendance = db.prepare(
+  `INSERT INTO session_attendance (id, session_id, pass_id, deducted_at) VALUES (?, ?, ?, ?)`
+);
+const deductPass = db.prepare(
+  `UPDATE passes SET remaining_sessions = remaining_sessions - 1 WHERE id = ? AND remaining_sessions > 0`
+);
 
 export const sessionRoutes = {
-  // Create session, mark attendance and deduct in one atomic call
+  // Create session, mark attendance and deduct in one atomic transaction
   "/api/sessions": {
     async POST(req: Request) {
       const auth = await requireAuth(req);
-
-
       const { name, pass_ids } = await req.json() as { name: string; pass_ids: string[] };
 
       const sessionId = randomUUID();
       const now = Date.now();
 
-      db.prepare(`INSERT INTO sessions (id, trainer_id, name, scheduled_at, status, created_at) VALUES (?, ?, ?, ?, 'completed', ?)`)
-        .run(sessionId, auth.sub, name, now, now);
+      // Batch-fetch pass data before writing so emails have accurate pre-decrement values
+      const placeholders = pass_ids.map(() => "?").join(",");
+      const passList = db.prepare(`SELECT * FROM passes WHERE id IN (${placeholders})`).all(...pass_ids) as Pass[];
+      const passesById = new Map(passList.map(p => [p.id, p]));
 
+      db.transaction(() => {
+        insertSession.run(sessionId, auth.sub, name, now, now);
+        for (const passId of pass_ids) {
+          insertAttendance.run(randomUUID(), sessionId, passId, now);
+          deductPass.run(passId);
+        }
+      })();
+
+      // Fire emails after transaction commits — one per attendee, fire-and-forget
       for (const passId of pass_ids) {
-        db.prepare(`INSERT INTO session_attendance (id, session_id, pass_id, deducted_at) VALUES (?, ?, ?, ?)`)
-          .run(randomUUID(), sessionId, passId, now);
-        db.prepare(`UPDATE passes SET remaining_sessions = remaining_sessions - 1 WHERE id = ? AND remaining_sessions > 0`)
-          .run(passId);
-        const pass = db.prepare(`SELECT * FROM passes WHERE id = ?`).get(passId) as Pass | undefined;
+        const pass = passesById.get(passId);
         if (pass) {
           sendSessionDeductedEmail({
             to: pass.parent_email,
             parentName: pass.parent_name,
             childName: pass.child_name,
             sessionName: name,
-            remainingSessions: pass.remaining_sessions,
-            passUrl: `${config.baseUrl}/pass/${pass.view_token}`,
+            remainingSessions: Math.max(0, pass.remaining_sessions - 1),
+            passUrl: passUrl(pass.view_token),
           }).catch(err => console.error("[email] sendSessionDeductedEmail failed:", err));
         }
       }
@@ -45,9 +60,7 @@ export const sessionRoutes = {
   // Usage log
   "/api/usage-log": {
     async GET(req: Request) {
-      const auth = await requireAuth(req);
-
-
+      await requireAuth(req);
       const rows = db.prepare(`
         SELECT
           sa.deducted_at,
@@ -60,7 +73,6 @@ export const sessionRoutes = {
         ORDER BY sa.deducted_at DESC
         LIMIT 200
       `).all();
-
       return Response.json(rows);
     },
   },

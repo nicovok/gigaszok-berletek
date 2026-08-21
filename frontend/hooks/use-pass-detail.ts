@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Pass, LedgerEntry } from "../../backend/schema";
 import { createApiClient } from "./api-client";
 
@@ -6,7 +6,7 @@ export function usePassDetail(token: string, onPassesRefreshed: (passes: Pass[])
   const [detailPass, setDetailPass] = useState<Pass | null>(null);
   const [detailUsage, setDetailUsage] = useState<LedgerEntry[]>([]);
   const [quickAlkalomName, setQuickAlkalomName] = useState("");
-  const api = createApiClient(token);
+  const api = useMemo(() => createApiClient(token), [token]);
 
   const openDetail = async (p: Pass) => {
     setDetailPass(p);

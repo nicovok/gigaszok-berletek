@@ -65,5 +65,11 @@ export function initDb() {
       created_at INTEGER NOT NULL,
       FOREIGN KEY(pass_id) REFERENCES passes(id)
     );
+
+    CREATE INDEX IF NOT EXISTS idx_passes_child_name ON passes(child_name);
+    CREATE INDEX IF NOT EXISTS idx_pass_topups_pass_id ON pass_topups(pass_id);
+    CREATE INDEX IF NOT EXISTS idx_pass_manual_deductions_pass_id ON pass_manual_deductions(pass_id);
+    CREATE INDEX IF NOT EXISTS idx_session_attendance_pass_id ON session_attendance(pass_id);
+    CREATE INDEX IF NOT EXISTS idx_session_attendance_session_id ON session_attendance(session_id);
   `);
 }

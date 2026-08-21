@@ -4,6 +4,12 @@ import type { Pass } from "../../backend/schema";
 export const PAGE_BG = "#d4cbbf";
 const NOTCH_BORDER = "#b8ac9c";
 
+export function sessionBadgeColor(n: number): "red" | "orange" | "blue" {
+  if (n === 0) return "red";
+  if (n <= 3) return "orange";
+  return "blue";
+}
+
 export function stubColor(n: number) {
   if (n === 0) return { bg: "#8b1a2a", stripe: "rgba(0,0,0,0.12)" };
   if (n <= 3)  return { bg: "#9c4d10", stripe: "rgba(0,0,0,0.10)" };
