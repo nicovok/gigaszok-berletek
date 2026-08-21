@@ -7,7 +7,11 @@ Pass management system built for Gigászok Sportegyesület swimming instructors.
 ## Flow
 
 ```
-External system (webshop / n8n)
+OpnForm (registration form)
+    ↓
+n8n (data transformation)
+    ↓
+gigaszok-enrollment (payment confirmed)
     ↓
 POST /api/external/passes  (API key)  →  pass created, email sent to parent
                                               ↓
@@ -31,7 +35,7 @@ Instructor dashboard
 - **Usage ledger** — every transaction is logged and timestamped
 - **QR code / parent link** — parents view their child's pass status without logging in
 - **Email notifications** — automatic on pass creation, top-up, and session deduction
-- **External API** — create passes from external systems via API key
+- **External API** — passes created automatically when a parent pays in the enrollment system (OpnForm → n8n → gigaszok-enrollment → outgoing webhook → this API)
 - **PocketID auth** — OAuth2 login via [PocketID](https://github.com/stonith404/pocket-id)
 
 ## Tech stack
@@ -126,7 +130,7 @@ bun run dev            # hot reload on :3000
 | `SMTP_PASS` | SMTP password |
 | `EMAIL_FROM` | Sender address (defaults to `SMTP_USR`) |
 | `DB_PATH` | SQLite file path (default: `berletek.db`) |
-| `EXTERNAL_API_KEY` | Optional — enables `POST /api/external/passes` |
+| `EXTERNAL_API_KEY` | Shared secret with gigaszok-enrollment — enables `POST /api/external/passes` |
 
 ### Email assets
 
@@ -196,11 +200,14 @@ Pre-built binaries for Linux x64/arm64, macOS x64/arm64, and Windows x64 are att
 | GET | `/api/usage-log` | Last 200 session attendance records |
 
 ### External API _(API key: `X-API-Key` header)_
+
+Called automatically by [gigaszok-enrollment](https://github.com/nicovok/gigaszok-enrollment) via its outgoing webhook when a registration payment is confirmed. The enrollment system fires `POST /api/external/passes` with the child and parent data; this creates the pass and sends a confirmation email to the parent.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/external/passes` | Create a pass; sends confirmation email to parent |
 
-**Example:**
+**Payload** (sent by gigaszok-enrollment):
 ```bash
 curl -X POST https://berlet.gig.nicoprt.xyz/api/external/passes \
   -H "X-API-Key: <EXTERNAL_API_KEY>" \
