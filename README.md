@@ -209,7 +209,7 @@ Called automatically by [gigaszok-enrollment](https://github.com/nicovok/gigaszo
 
 **Payload** (sent by gigaszok-enrollment):
 ```bash
-curl -X POST https://berlet.gig.nicoprt.xyz/api/external/passes \
+curl -X POST https://<your-host>/api/external/passes \
   -H "X-API-Key: <EXTERNAL_API_KEY>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -224,7 +224,7 @@ curl -X POST https://berlet.gig.nicoprt.xyz/api/external/passes \
 
 Response:
 ```json
-{ "id": "...", "view_token": "...", "pass_url": "https://berlet.gig.nicoprt.xyz/pass/..." }
+{ "id": "...", "view_token": "...", "pass_url": "https://<your-host>/pass/..." }
 ```
 
 ## Screenshots
