@@ -13,6 +13,7 @@ await initEmailAssets();
 
 const server = Bun.serve({
   port: config.port,
+  hostname: "0.0.0.0",
   routes: {
     "/": frontend,
     "/pass/:token": frontend,
