@@ -23,6 +23,10 @@ let assets: Awaited<ReturnType<typeof loadAssets>>;
 
 export async function initEmailAssets() {
   assets = await loadAssets();
+  transporter.verify((err, ok) => {
+    if (err) console.error("[email] SMTP connection failed:", err.message);
+    else console.log("[email] SMTP connection OK");
+  });
 }
 
 /*
