@@ -138,7 +138,8 @@ export async function sendPassCreatedEmail(opts: {
   sessions: number;
   passUrl: string;
 }) {
-  await transporter.sendMail({
+  console.log(`[email] sendPassCreatedEmail → ${opts.to} (smtp: ${config.smtp.host}:${config.smtp.port}, user: ${config.smtp.user})`);
+  const info = await transporter.sendMail({
     from: config.smtp.from,
     to: opts.to,
     subject: `Bérleted létrejött – ${opts.childName}`,
@@ -152,6 +153,7 @@ export async function sendPassCreatedEmail(opts: {
     ),
     attachments: defaultAttachments(),
   });
+  console.log(`[email] sent messageId=${info.messageId} response=${info.response}`);
 }
 
 export async function sendPassToppedUpEmail(opts: {
@@ -162,7 +164,8 @@ export async function sendPassToppedUpEmail(opts: {
   remainingSessions: number;
   passUrl: string;
 }) {
-  await transporter.sendMail({
+  console.log(`[email] sendPassToppedUpEmail → ${opts.to}`);
+  const info = await transporter.sendMail({
     from: config.smtp.from,
     to: opts.to,
     subject: `Bérleted feltöltve – ${opts.childName}`,
@@ -179,6 +182,7 @@ export async function sendPassToppedUpEmail(opts: {
     ),
     attachments: defaultAttachments(),
   });
+  console.log(`[email] sent messageId=${info.messageId} response=${info.response}`);
 }
 
 export async function sendSessionDeductedEmail(opts: {
@@ -189,7 +193,8 @@ export async function sendSessionDeductedEmail(opts: {
   remainingSessions: number;
   passUrl: string;
 }) {
-  await transporter.sendMail({
+  console.log(`[email] sendSessionDeductedEmail → ${opts.to}`);
+  const info = await transporter.sendMail({
     from: config.smtp.from,
     to: opts.to,
     subject: `Alkalom levonva – ${opts.childName}`,
@@ -206,4 +211,5 @@ export async function sendSessionDeductedEmail(opts: {
     ),
     attachments: defaultAttachments(),
   });
+  console.log(`[email] sent messageId=${info.messageId} response=${info.response}`);
 }
