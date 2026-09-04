@@ -20,6 +20,11 @@ export const config = {
     port: parseInt(Bun.env.SMTP_PORT ?? "2525"),
     user: require("SMTP_USR"),
     pass: require("SMTP_PASS"),
-    from: Bun.env.EMAIL_FROM ?? require("SMTP_USR"),
+    get from() {
+      const f = Bun.env.EMAIL_FROM;
+      const u = Bun.env.SMTP_USR ?? "";
+      if (!f) return u;
+      return f.includes("@") ? f : `${f} <${u}>`;
+    },
   },
 };
